@@ -1,122 +1,136 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState, useEffect, useRef } from 'react';
+import { ControlLoopEngine } from './simulation/ControlLoopEngine';
+import { WaveformCanvas } from './components/WaveformCanvas';
+import { FeedbackSignalViewer } from './components/FeedbackSignalViewer';
+import { ControlLoopDiagram } from './components/ControlLoopDiagram';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const engineRef = useRef(new ControlLoopEngine());
+    const [state, setState] = useState(engineRef.current.getState());
+      const [simTime, setSimTime] = useState(0);
+        const animationFrameRef = useRef<number>();
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+          // محرك حلقة التحديث (60 FPS)
+            useEffect(() => {
+                let lastTime = performance.now();
 
-      <div className="ticks"></div>
+                    const animate = (currentTime: number) => {
+                          const deltaTime = (currentTime - lastTime) / 1000; // بالثواني
+                                lastTime = currentTime;
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+                                      // تحديث وقت المحاكاة
+                                            setSimTime(prev => prev + deltaTime);
+                                                  
+                                                        // الحصول على أحدث حالة من المحرك
+                                                              setState(engineRef.current.getState());
+                                                                    
+                                                                          animationFrameRef.current = requestAnimationFrame(animate);
+                                                                              };
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
+                                                                                  animationFrameRef.current = requestAnimationFrame(animate);
 
-export default App
+                                                                                      return () => {
+                                                                                            if (animationFrameRef.current) {
+                                                                                                    cancelAnimationFrame(animationFrameRef.current);
+                                                                                                          }
+                                                                                                              };
+                                                                                                                }, []);
+
+                                                                                                                  // دوال التحكم
+                                                                                                                    const handleLoadChange = (percentage: number) => {
+                                                                                                                        engineRef.current.applyLoad(percentage);
+                                                                                                                          };
+
+                                                                                                                            const handleFault = (type: string) => {
+                                                                                                                                engineRef.current.injectFault(type, type === 'overvoltage' ? 20 : type === 'overcurrent' ? 150 : 60);
+                                                                                                                                  };
+
+                                                                                                                                    const handleReset = () => {
+                                                                                                                                        engineRef.current.reset();
+                                                                                                                                          };
+
+                                                                                                                                            return (
+                                                                                                                                                <div className="min-h-screen bg-slate-100 text-slate-900 p-6 font-sans">
+                                                                                                                                                      {/* Header */}
+                                                                                                                                                            <header className="mb-8 border-b border-slate-300 pb-4">
+                                                                                                                                                                    <h1 className="text-3xl font-bold text-slate-800">A320 GCU1 Feedback & Control Analysis</h1>
+                                                                                                                                                                            <p className="text-slate-600 mt-2">
+                                                                                                                                                                                      Interactive Closed-Loop Control System Review Tool | ATA 24 Electrical Power
+                                                                                                                                                                                              </p>
+                                                                                                                                                                                                    </header>
+
+                                                                                                                                                                                                          {/* Control Panel */}
+                                                                                                                                                                                                                <div className="bg-white p-4 rounded-lg shadow mb-6 border border-slate-200 flex flex-wrap gap-4 items-center">
+                                                                                                                                                                                                                        <span className="font-semibold text-slate-700 mr-2">Simulation Controls:</span>
+                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                        <div className="flex gap-2">
+                                                                                                                                                                                                                                                  <button onClick={() => handleLoadChange(0)} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded text-sm font-medium transition">No Load</button>
+                                                                                                                                                                                                                                                            <button onClick={() => handleLoadChange(50)} className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-sm font-medium transition">50% Load</button>
+                                                                                                                                                                                                                                                                      <button onClick={() => handleLoadChange(100)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition">100% Load (90kVA)</button>
+                                                                                                                                                                                                                                                                              </div>
+
+                                                                                                                                                                                                                                                                                      <div className="w-px h-8 bg-slate-300 mx-2"></div>
+
+                                                                                                                                                                                                                                                                                              <div className="flex gap-2">
+                                                                                                                                                                                                                                                                                                        <button onClick={() => handleFault('overvoltage')} className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm font-medium transition">Inject Overvoltage</button>
+                                                                                                                                                                                                                                                                                                                  <button onClick={() => handleFault('overcurrent')} className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm font-medium transition">Inject Overcurrent</button>
+                                                                                                                                                                                                                                                                                                                            <button onClick={() => handleFault('differential')} className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded text-sm font-medium transition">Inject Diff. Fault</button>
+                                                                                                                                                                                                                                                                                                                                    </div>
+
+                                                                                                                                                                                                                                                                                                                                            <div className="w-px h-8 bg-slate-300 mx-2"></div>
+
+                                                                                                                                                                                                                                                                                                                                                    <button onClick={handleReset} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-sm font-medium transition ml-auto">
+                                                                                                                                                                                                                                                                                                                                                              System Reset
+                                                                                                                                                                                                                                                                                                                                                                      </button>
+                                                                                                                                                                                                                                                                                                                                                                            </div>
+
+                                                                                                                                                                                                                                                                                                                                                                                  {/* Main Dashboard Grid */}
+                                                                                                                                                                                                                                                                                                                                                                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                                                                                                                                                                                                                                                                                                                                                                                
+                                                                                                                                                                                                                                                                                                                                                                                                        {/* Left Column: Diagram & Waveforms */}
+                                                                                                                                                                                                                                                                                                                                                                                                                <div className="lg:col-span-2 space-y-6">
+                                                                                                                                                                                                                                                                                                                                                                                                                          <ControlLoopDiagram loop={state.voltageRegulationLoop} />
+                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                          <WaveformCanvas 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        title="Generator Phase Voltages at POR (115V AC, 400Hz)"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      amplitude={state.voltageRegulationLoop.feedbackSignals[0].currentValue}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    frequency={400}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  time={simTime}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <WaveformCanvas 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        title="PMG Frequency Derived Output (Target: 400Hz)"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      amplitude={1} // Normalized for display
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    frequency={state.frequencyRegulationLoop.feedbackSignals[1].currentValue / 400} // Scaled for visual
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  time={simTime}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                color="#8b5cf6"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              </div>
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      {/* Right Column: Feedback Signals Tables */}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <div className="space-y-6">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <FeedbackSignalViewer 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    signals={state.voltageRegulationLoop.feedbackSignals} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                loopName="Voltage Regulation Feedback (POR)" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <FeedbackSignalViewer 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                signals={state.frequencyRegulationLoop.feedbackSignals} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            loopName="Frequency Regulation Feedback (PMG)" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <FeedbackSignalViewer 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            signals={state.overcurrentProtection.feedbackSignals} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        loopName="Overcurrent & Feeder Protection Feedback (CTs)" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <FeedbackSignalViewer 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        signals={state.differentialProtection.feedbackSignals} 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    loopName="Differential Protection Feedback" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              />
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      </div>
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  );
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  }
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  export default App;
